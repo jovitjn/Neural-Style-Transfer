@@ -26,10 +26,12 @@ with style loss
 \mathcal{L}_{style}=\sum_l \|G_l(x)-G_l(s)\|_2^2.
 \]
 
-The generated image is optimized with
+An optional total-variation term discourages abrupt neighboring-pixel changes. The
+generated image is optimized with
 
 \[
-\mathcal{L}=\alpha\mathcal{L}_{content}+\beta\mathcal{L}_{style}.
+\mathcal{L}=\alpha\mathcal{L}_{content}+\beta\mathcal{L}_{style}
++\gamma\mathcal{L}_{TV}.
 \]
 
 ## Current implementation
@@ -41,8 +43,11 @@ The generated image is optimized with
 - content loss
 - Gram-matrix style loss
 - direct optimization of image pixels with Adam
-- GPU support when CUDA is available
-- periodic saving of the generated image
+- optional total-variation regularization
+- automatic CPU, CUDA, or Apple MPS device selection
+- deterministic seeding, argument validation, and pixel-range projection
+- configurable paths and optimization settings through a command-line interface
+- periodic progress logging and image saving
 
 ## Running
 
@@ -52,27 +57,40 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Place two images in the repository root:
-
-```text
-picture.png   # content image
-style.jpg     # style reference
-```
-
-Then run:
+Run with your own content and style images:
 
 ```bash
-python code.py
+python code.py \
+  --content path/to/content.jpg \
+  --style path/to/style.jpg \
+  --output outputs/stylized.png \
+  --steps 2000 \
+  --image-size 356 \
+  --tv-weight 1e-4
 ```
 
-The script periodically writes `generated.png`.
+Run `python code.py --help` for all controls. With no arguments, the script reads
+`picture.png` and `style.jpg`, then periodically overwrites `generated.png` with
+the latest result. The first run downloads the pretrained VGG19 weights through
+`torchvision`.
+
+For a quick smoke test, use a smaller image and fewer steps:
+
+```bash
+python code.py --content picture.png --style style.jpg \
+  --image-size 128 --steps 20 --save-every 10
+```
+
+No reference output is committed because results depend on user-supplied images.
 
 ## Scope
 
-This is an **educational implementation**, not a novel style-transfer method. Its value is in demonstrating how perceptual feature losses and Gram-matrix statistics are constructed explicitly.
-
-A stronger extension would add command-line arguments, configurable layer weights, total-variation regularization, better output logging, and a side-by-side result gallery.
+This is an **educational implementation**, not a novel style-transfer method. Its
+value is in making perceptual feature losses and Gram-matrix statistics explicit
+in a small, runnable program. It uses one fixed set of VGG19 feature layers and
+does not claim real-time inference or a trained feed-forward stylization model.
 
 ## Reference
 
-Leon A. Gatys, Alexander S. Ecker, Matthias Bethge, **A Neural Algorithm of Artistic Style**, 2015.
+Leon A. Gatys, Alexander S. Ecker, Matthias Bethge,
+[**A Neural Algorithm of Artistic Style**](https://arxiv.org/abs/1508.06576), 2015.
